@@ -1,0 +1,73 @@
+{
+  "title": "XGIMI Elfin Flip",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your Elfin Flip",
+        "description": "Turn on your XGIMI Elfin Flip WK03C before continuing. The integration reads the projector's local identity and exposes its supported local states and actions. You can configure optional power-on after adding the device.",
+        "data": {
+          "host": "IP address or hostname"
+        },
+        "data_description": {
+          "host": "Enter the projector's address on your local network, without http://, a port, or a path."
+        }
+      },
+      "reconfigure": {
+        "title": "Update the projector address",
+        "description": "Turn on the projector and enter its current address. The integration checks that it is the same projector before updating the connection.",
+        "data": {
+          "host": "IP address or hostname"
+        },
+        "data_description": {
+          "host": "Enter the new local address of the projector already configured in this integration."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the projector. Turn it on, check its address and local network connection, then try again.",
+      "invalid_device": "The address did not return a valid XGIMI Elfin Flip WK03C device description. Check the address and projector model.",
+      "different_device": "This address belongs to a different projector. Enter the address of the original projector, or add the other projector separately."
+    },
+    "abort": {
+      "already_configured": "This projector is already configured.",
+      "reconfigure_successful": "The projector address has been updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optional wake and status updates",
+        "description": "Standby uses the projector's local Wi-Fi service. Choose an optional wake method below. After sending wake, the integration waits for the projector's local service to respond. Network reachability alone does not directly report whether the projection is on.",
+        "data": {
+          "wake_backend": "Wake method",
+          "wake_button": "Existing wake button",
+          "manufacturer_data": "Bluetooth manufacturer data",
+          "bluetooth_adapter": "Local Bluetooth adapter",
+          "advertisement_duration": "Wake transmission duration (seconds)",
+          "increment_counter": "Increment the wake packet counter",
+          "wake_timeout": "Wait for wake confirmation (seconds)",
+          "scan_interval": "Status update interval (seconds)",
+          "keyboard_connection_sensor": "Projector keyboard connection sensor"
+        },
+        "data_description": {
+          "wake_backend": "none: disable power-on; button: press an existing Home Assistant wake button; local_bluetooth: transmit the wake packet through a local BlueZ adapter.",
+          "wake_button": "Used by the button method. Choose an existing button or input button whose hardware sends the projector's wake advertisement. Its device firmware controls the packet; the manufacturer-data field below does not reconfigure that hardware.",
+          "manufacturer_data": "Used only by local_bluetooth. Enter exactly 16 bytes as 32 hexadecimal characters; spaces between bytes are accepted. Company ID 0x0046 is supplied separately: do not include its 46 00 bytes in this field.",
+          "bluetooth_adapter": "Used only by local_bluetooth. Enter hci0 or a full path such as /org/bluez/hci0 for a powered local BlueZ adapter that supports advertising. A standard ESPHome Bluetooth proxy cannot transmit these custom advertisements.",
+          "advertisement_duration": "Used only by local_bluetooth. Transmit the wake advertisement for 1 to 10 seconds, then stop it.",
+          "increment_counter": "Used only by local_bluetooth. Change the first manufacturer-data byte for each wake transmission. Enable this only if your projector requires this counter behavior.",
+          "wake_timeout": "Allow 10 to 120 seconds for the projector's local service to return after a wake request. A transmitted packet alone is not a confirmed wake.",
+          "scan_interval": "Check the projector's local service every 5 to 300 seconds.",
+          "keyboard_connection_sensor": "Optional. Choose the ESPHome Projector Keyboard Connected sensor to enable navigation and volume commands."
+        }
+      }
+    },
+    "error": {
+      "invalid_button": "Choose an existing button or input button outside this integration that sends the projector's wake signal.",
+      "invalid_manufacturer_data": "Enter exactly 16 manufacturer-data bytes as 32 hexadecimal characters. Omit the separate company ID 0x0046 and its 46 00 bytes.",
+      "no_advertising_adapter": "The selected local BlueZ adapter is unavailable, powered off, or has no free advertising slot. Home Assistant needs system D-Bus access. Standard Bluetooth proxies do not support this transmission.",
+      "invalid_backend": "Choose none, button, or local_bluetooth as the wake method.",
+      "invalid_keyboard": "Choose the ESPHome Projector Keyboard Connected sensor."
+    }
+  }
+}

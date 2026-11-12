@@ -1,0 +1,73 @@
+{
+  "title": "XGIMI Elfin Flip",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ligar ao Elfin Flip",
+        "description": "Ligue o seu XGIMI Elfin Flip WK03C antes de continuar. A integração lê a identificação local do projetor e disponibiliza os estados e as ações suportados pelos seus serviços locais. Depois de adicionar o dispositivo, pode configurar uma forma opcional de o ligar remotamente.",
+        "data": {
+          "host": "Endereço IP ou nome do anfitrião"
+        },
+        "data_description": {
+          "host": "Introduza o endereço do projetor na sua rede local, sem http://, porta ou caminho."
+        }
+      },
+      "reconfigure": {
+        "title": "Atualizar o endereço do projetor",
+        "description": "Ligue o projetor e introduza o seu endereço atual. A integração confirma que se trata do mesmo projetor antes de atualizar a ligação.",
+        "data": {
+          "host": "Endereço IP ou nome do anfitrião"
+        },
+        "data_description": {
+          "host": "Introduza o novo endereço local do projetor já configurado nesta integração."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Não foi possível contactar o projetor. Ligue-o, verifique o endereço e a ligação à rede local e tente novamente.",
+      "invalid_device": "O endereço não devolveu uma descrição válida de um XGIMI Elfin Flip WK03C. Verifique o endereço e o modelo do projetor.",
+      "different_device": "Este endereço pertence a outro projetor. Introduza o endereço do projetor original ou adicione o outro projetor separadamente."
+    },
+    "abort": {
+      "already_configured": "Este projetor já está configurado.",
+      "reconfigure_successful": "O endereço do projetor foi atualizado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ativação opcional e atualização de estados",
+        "description": "O modo de espera é pedido através do serviço Wi-Fi local do projetor. Escolha abaixo uma forma opcional de o ligar. Depois de enviar o sinal, a integração aguarda a resposta do serviço local. A disponibilidade na rede, por si só, não indica diretamente se a projeção está ligada.",
+        "data": {
+          "wake_backend": "Método de ativação",
+          "wake_button": "Botão de ativação existente",
+          "manufacturer_data": "Dados de fabricante Bluetooth",
+          "bluetooth_adapter": "Adaptador Bluetooth local",
+          "advertisement_duration": "Duração da transmissão de ativação (segundos)",
+          "increment_counter": "Incrementar o contador do pacote de ativação",
+          "wake_timeout": "Espera pela confirmação de ativação (segundos)",
+          "scan_interval": "Intervalo de atualização de estados (segundos)",
+          "keyboard_connection_sensor": "Sensor de ligação do teclado do projetor"
+        },
+        "data_description": {
+          "wake_backend": "none: desativar a opção de ligar; button: premir um botão de ativação existente no Home Assistant; local_bluetooth: transmitir o pacote de ativação através de um adaptador BlueZ local.",
+          "wake_button": "Usado pelo método button. Escolha um botão ou input_button existente cujo dispositivo envie o anúncio Bluetooth de ativação do projetor. O firmware desse dispositivo define o pacote; o campo de dados de fabricante abaixo não reconfigura esse dispositivo.",
+          "manufacturer_data": "Usado apenas por local_bluetooth. Introduza exatamente 16 bytes como 32 caracteres hexadecimais; são aceites espaços entre os bytes. O identificador de fabricante 0x0046 é fornecido separadamente: não inclua os bytes 46 00 neste campo.",
+          "bluetooth_adapter": "Usado apenas por local_bluetooth. Introduza hci0 ou um caminho completo, como /org/bluez/hci0, de um adaptador BlueZ local ligado e com suporte para anúncios Bluetooth. Um proxy Bluetooth ESPHome normal não transmite estes anúncios personalizados.",
+          "advertisement_duration": "Usado apenas por local_bluetooth. Transmitir o anúncio de ativação durante 1 a 10 segundos e depois interromper a transmissão.",
+          "increment_counter": "Usado apenas por local_bluetooth. Alterar o primeiro byte dos dados de fabricante em cada transmissão de ativação. Ative apenas se o seu projetor precisar deste contador.",
+          "wake_timeout": "Aguardar entre 10 e 120 segundos pelo regresso do serviço local do projetor depois de pedir a ativação. A transmissão do pacote, por si só, não confirma que o projetor ligou.",
+          "scan_interval": "Verificar o serviço local do projetor a cada 5 a 300 segundos.",
+          "keyboard_connection_sensor": "Opcional. Escolha Projector Keyboard Connected do ESPHome para usar a navegação e o volume."
+        }
+      }
+    },
+    "error": {
+      "invalid_button": "Escolha um botão ou input_button existente, fora desta integração, que envie o sinal de ativação do projetor.",
+      "invalid_manufacturer_data": "Introduza exatamente 16 bytes de dados de fabricante como 32 caracteres hexadecimais. Omita o identificador de fabricante separado 0x0046 e os seus bytes 46 00.",
+      "no_advertising_adapter": "O adaptador BlueZ local escolhido não está disponível, está desligado ou não tem espaço para outro anúncio. O Home Assistant precisa de acesso ao D-Bus do sistema. Os proxies Bluetooth normais não suportam esta transmissão.",
+      "invalid_backend": "Escolha none, button ou local_bluetooth como método de ativação.",
+      "invalid_keyboard": "Escolha o sensor Projector Keyboard Connected do ESPHome."
+    }
+  }
+}

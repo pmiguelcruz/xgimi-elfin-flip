@@ -1,4 +1,4 @@
-"""Standby and optional wake for the projector."""
+"""One projector entity for inferred Wi-Fi power and standby."""
 
 from homeassistant.components.media_player import (
     MediaPlayerDeviceClass,
@@ -6,9 +6,11 @@ from homeassistant.components.media_player import (
     MediaPlayerEntityFeature,
     MediaPlayerState,
 )
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import WAKE_NONE
-from .entity import ElfinEntity
+from .const import DOMAIN
+from .coordinator import ProjectorCoordinator
 
 PARALLEL_UPDATES = 0
 
@@ -17,59 +19,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([ElfinMediaPlayer(entry.runtime_data)])
 
 
-class ElfinMediaPlayer(ElfinEntity, MediaPlayerEntity):
+class ElfinMediaPlayer(CoordinatorEntity[ProjectorCoordinator], MediaPlayerEntity):
+    _attr_has_entity_name = True
     _attr_name = None
     _attr_device_class = MediaPlayerDeviceClass.TV
     _attr_assumed_state = True
+    _attr_supported_features = MediaPlayerEntityFeature.TURN_OFF
 
-    def __init__(self, coordinator):
-        super().__init__(coordinator, "projector")
+    def __init__(self, coordinator: ProjectorCoordinator) -> None:
+        super().__init__(coordinator)
+        identity = coordinator.identity
+        self._attr_unique_id = f"{identity.udn}_projector"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, identity.udn)},
+            name=identity.name,
+            manufacturer=identity.manufacturer,
+            model=identity.model,
+        )
 
     @property
-    def supported_features(self):
-        features = MediaPlayerEntityFeature.TURN_OFF
-        if self.coordinator.wake_backend != WAKE_NONE:
-            features |= MediaPlayerEntityFeature.TURN_ON
-        return features
-
-    @property
-    def state(self):
-        data = self.coordinator.data
-        if data.power == "waking":
+    def state(self) -> MediaPlayerState | None:
+        if self.coordinator.data is None:
             return None
-        if data.power == "standby":
-            return MediaPlayerState.OFF
-        if data.reachable:
-            # Network presence does not prove display power or playback.
-            return MediaPlayerState.ON
-        return None
+        return MediaPlayerState.ON if self.coordinator.data else MediaPlayerState.OFF
 
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data
-        return {
-            "power_observation": data.power,
-            "power_state_is_inferred": True,
-            "display_power_observable": False,
-            "last_command": data.last_command,
-            "last_command_result": data.command_result,
-            "available_controls": ["standby"]
-            + (["wake"] if self.coordinator.wake_backend != WAKE_NONE else []),
-            "unexposed_controls": [
-                "volume",
-                "mute",
-                "hdmi_input",
-                "navigation",
-                "focus",
-                "keystone",
-                "picture",
-                "temperature",
-                "full_shutdown",
-            ],
-        }
-
-    async def async_turn_off(self):
+    async def async_turn_off(self) -> None:
         await self.coordinator.async_sleep()
-
-    async def async_turn_on(self):
-        await self.coordinator.async_wake()

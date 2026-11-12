@@ -3,9 +3,6 @@
     "@pmiguelcruz"
   ],
   "config_flow": true,
-  "dependencies": [
-    "bluetooth"
-  ],
   "documentation": "https://github.com/pmiguelcruz/xgimi-elfin-flip",
   "domain": "xgimi_elfin_flip",
   "integration_type": "device",
@@ -15,5 +12,5 @@
   "requirements": [
     "defusedxml==0.7.1"
   ],
-  "version": "0.2.0"
+  "version": "0.4.0"
 }

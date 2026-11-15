@@ -1,4 +1,4 @@
-"""Exercise the Wi-Fi integration against an isolated Home Assistant instance."""
+"""Exercise projector power control against an isolated Home Assistant instance."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from homeassistant.helpers import device_registry as dr  # noqa: E402
 from homeassistant.helpers import entity_registry as er  # noqa: E402
 
 from custom_components import xgimi_elfin_flip as integration  # noqa: E402
+from custom_components.xgimi_elfin_flip import coordinator as coordinator_module  # noqa: E402
 from custom_components.xgimi_elfin_flip.api import (  # noqa: E402
     DeviceInfo,
     ProjectorCommandError,
@@ -29,7 +30,12 @@ from custom_components.xgimi_elfin_flip.api import (  # noqa: E402
     ProjectorProtocolError,
 )
 from custom_components.xgimi_elfin_flip.config_flow import ElfinFlipConfigFlow  # noqa: E402
-from custom_components.xgimi_elfin_flip.const import CONF_IDENTITY, DOMAIN, PLATFORMS  # noqa: E402
+from custom_components.xgimi_elfin_flip.const import (  # noqa: E402
+    CONF_IDENTITY,
+    DOMAIN,
+    PLATFORMS,
+    WAKE_ACTION,
+)
 from custom_components.xgimi_elfin_flip.coordinator import ProjectorCoordinator  # noqa: E402
 from custom_components.xgimi_elfin_flip.media_player import ElfinMediaPlayer  # noqa: E402
 
@@ -108,7 +114,10 @@ class RuntimeChecks(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.player.available)
 
     async def test_turn_off_uses_only_wifi_and_refreshes(self):
-        self.assertEqual(self.player.supported_features, MediaPlayerEntityFeature.TURN_OFF)
+        self.assertEqual(
+            self.player.supported_features,
+            MediaPlayerEntityFeature.TURN_ON | MediaPlayerEntityFeature.TURN_OFF,
+        )
         self.assertEqual(self.player.unique_id, f"{IDENTITY.udn}_projector")
         self.client.async_sleep.side_effect = lambda: setattr(
             self.client.async_get_device_info, "side_effect", ProjectorConnectionError
@@ -117,6 +126,52 @@ class RuntimeChecks(unittest.IsolatedAsyncioTestCase):
         await self.player.async_turn_off()
         self.client.async_sleep.assert_awaited_once_with()
         await self.coordinator.async_refresh()
+        self.assertEqual(self.player.state, MediaPlayerState.OFF)
+
+    async def test_turn_on_calls_s3_and_state_follows_dial(self):
+        async def s3_acknowledges(_call):
+            self.assertEqual(self.player.state, MediaPlayerState.OFF)
+            self.client.async_get_device_info.side_effect = None
+
+        wake = AsyncMock(side_effect=s3_acknowledges)
+        self.hass.services.async_register("esphome", WAKE_ACTION, wake)
+        self.client.async_get_device_info.side_effect = ProjectorConnectionError
+        await self.coordinator.async_refresh()
+        self.assertEqual(self.player.state, MediaPlayerState.OFF)
+        await self.player.async_turn_on()
+        wake.assert_awaited_once()
+        self.assertEqual(wake.call_args.args[0].data, {"projector_udn": IDENTITY.udn})
+        self.client.async_sleep.assert_not_awaited()
+        self.assertEqual(self.player.state, MediaPlayerState.ON)
+        wake.side_effect = None
+        await self.player.async_turn_on()
+        self.assertEqual(wake.await_count, 2)
+
+    async def test_wake_retries_once_when_projector_stays_offline(self):
+        self.client.async_get_device_info.side_effect = ProjectorConnectionError
+        wake = AsyncMock()
+        self.hass.services.async_register("esphome", WAKE_ACTION, wake)
+        with (
+            patch.object(coordinator_module, "WAKE_DISCOVERY_SECONDS", 0),
+            self.assertRaisesRegex(HomeAssistantError, "after two wake attempts"),
+        ):
+            await self.player.async_turn_on()
+        self.assertEqual(wake.await_count, 2)
+        self.assertEqual(self.player.state, MediaPlayerState.OFF)
+
+    async def test_missing_s3_action_does_not_break_standby(self):
+        with self.assertRaisesRegex(HomeAssistantError, "S3 Box wake action is unavailable"):
+            await self.player.async_turn_on()
+        await self.player.async_turn_off()
+        self.client.async_sleep.assert_awaited_once_with()
+
+    async def test_s3_rejection_reaches_caller(self):
+        wake = AsyncMock(side_effect=HomeAssistantError("S3 rejected wake"))
+        self.hass.services.async_register("esphome", WAKE_ACTION, wake)
+        self.client.async_get_device_info.side_effect = ProjectorConnectionError
+        await self.coordinator.async_refresh()
+        with self.assertRaisesRegex(HomeAssistantError, "S3 rejected wake"):
+            await self.player.async_turn_on()
         self.assertEqual(self.player.state, MediaPlayerState.OFF)
 
     async def test_http_acceptance_does_not_override_reachable_state(self):

@@ -1,0 +1,80 @@
+# Include from the ESPHome configuration for the node named s3-box.
+substitutions:
+  xgimi_wake_suffix: !secret xgimi_wake_suffix
+  xgimi_projector_udn: !secret xgimi_projector_udn
+
+esp32_ble:
+  id: xgimi_wake_ble
+  advertising: true
+
+api:
+  actions:
+    - action: xgimi_wake
+      supports_response: status
+      variables:
+        projector_udn: string
+      then:
+        - if:
+            condition:
+              lambda: return projector_udn == "${xgimi_projector_udn}";
+            then:
+              - script.execute: broadcast_xgimi_wake
+              - api.respond:
+                  success: !lambda return id(xgimi_wake_advertising);
+                  error_message: "The S3 Box could not start the XGIMI wake advertisement."
+            else:
+              - api.respond:
+                  success: false
+                  error_message: "This S3 Box is configured for a different projector."
+
+script:
+  - id: broadcast_xgimi_wake
+    then:
+      - lambda: |-
+            if (id(xgimi_wake_advertising) || !id(xgimi_wake_ble).is_active()) {
+              return;
+            }
+            // Persist the next counter before sending this one. Keep the same
+            // counter ID across updates so a reboot doesn't repeat a packet.
+            const uint8_t counter = id(xgimi_wake_next_counter);
+            id(xgimi_wake_next_counter) = static_cast<uint8_t>(counter + 1);
+            xgimi_wake_next_counter->update();
+            if (!global_preferences->sync()) {
+              ESP_LOGE("xgimi_wake", "Could not save the advertisement counter");
+              return;
+            }
+            const uint8_t packet[] = {0x46, 0x00, counter, ${xgimi_wake_suffix}};
+            static_assert(sizeof(packet) == 18, "Set the 15-byte XGIMI wake suffix");
+            id(xgimi_wake_ble).advertising_set_manufacturer_data(
+                std::vector<uint8_t>(std::begin(packet), std::end(packet)));
+            id(xgimi_wake_ble).advertising_start();
+            id(xgimi_wake_advertising) = true;
+            id(xgimi_wake_stop_at) = millis() + 4000;
+            ESP_LOGI("xgimi_wake", "Wake advertisement requested for 4 seconds");
+
+globals:
+  - id: xgimi_wake_advertising
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: xgimi_wake_stop_at
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: xgimi_wake_next_counter
+    type: uint8_t
+    restore_value: true
+    initial_value: '0x0A'
+
+interval:
+  - interval: 250ms
+    then:
+      - lambda: |-
+          if (!id(xgimi_wake_advertising) ||
+              static_cast<int32_t>(millis() - id(xgimi_wake_stop_at)) < 0) {
+            return;
+          }
+          id(xgimi_wake_advertising) = false;
+          id(xgimi_wake_ble).advertising_stop();
+          id(xgimi_wake_ble).advertising_set_manufacturer_data({});
+          ESP_LOGI("xgimi_wake", "Wake advertisement expired and was cleared");

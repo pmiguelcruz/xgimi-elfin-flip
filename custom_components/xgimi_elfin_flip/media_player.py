@@ -1,4 +1,4 @@
-"""One projector entity for inferred Wi-Fi power and standby."""
+"""One projector entity for local power control and inferred power state."""
 
 from homeassistant.components.media_player import (
     MediaPlayerDeviceClass,
@@ -24,7 +24,7 @@ class ElfinMediaPlayer(CoordinatorEntity[ProjectorCoordinator], MediaPlayerEntit
     _attr_name = None
     _attr_device_class = MediaPlayerDeviceClass.TV
     _attr_assumed_state = True
-    _attr_supported_features = MediaPlayerEntityFeature.TURN_OFF
+    _attr_supported_features = MediaPlayerEntityFeature.TURN_ON | MediaPlayerEntityFeature.TURN_OFF
 
     def __init__(self, coordinator: ProjectorCoordinator) -> None:
         super().__init__(coordinator)
@@ -43,5 +43,8 @@ class ElfinMediaPlayer(CoordinatorEntity[ProjectorCoordinator], MediaPlayerEntit
             return None
         return MediaPlayerState.ON if self.coordinator.data else MediaPlayerState.OFF
 
+    async def async_turn_on(self) -> None:
+        await self.coordinator.async_set_power(on=True)
+
     async def async_turn_off(self) -> None:
-        await self.coordinator.async_sleep()
+        await self.coordinator.async_set_power(on=False)

@@ -2,11 +2,11 @@
 
 <img src="custom_components/xgimi_elfin_flip/brand/icon.png" width="72" alt="Elfin Flip integration icon">
 
-Local Wi-Fi integration for the original **XGIMI Elfin Flip WK03C** running XGIMI OS. Requires Home Assistant **2026.11.0** or later.
+Local power control for the original **XGIMI Elfin Flip WK03C** running XGIMI OS. Requires Home Assistant **2026.11.0** or later.
 
 The integration adds one media player entity. Its **On** or **Off** state is inferred from the projector's DIAL service on the local network. A matching device response shows On. No response shows Off after two consecutive missed polls if the device was On. A reply from a different device or an invalid DIAL response shows Unknown. A network outage can also appear as Off, and the projector can keep serving DIAL while the image is off.
 
-`media_player.turn_off` sends the projector's Wi-Fi standby request. The integration checks that the address still belongs to the configured projector before sending it. The action puts the projector in standby.
+`media_player.turn_on` asks the ESPHome S3 Box to broadcast the projector's Bluetooth wake packet for four seconds. `media_player.turn_off` checks the projector's identity and sends its Wi-Fi standby request. Both actions use the same media player entity. State follows the DIAL poll after either command. If the projector stays off the network after the first wake request, Home Assistant tries once more and reports an error if it still cannot reach the projector.
 
 ## Install
 
@@ -14,15 +14,26 @@ The integration adds one media player entity. Its **On** or **Off** state is inf
 2. Go to **Settings → Devices & services → Add integration → XGIMI Elfin Flip**.
 3. With the projector on, enter its local IP address or hostname. Use **Reconfigure** on the entry if that address changes.
 
-Use your projector entity in a dashboard or automation.
+Existing installations keep their media player entity ID and projector address when updating to 0.5.0. With the S3 Box configured, **Turn on** becomes available after Home Assistant loads the update.
 
 ```yaml
-action: media_player.turn_off
+action: media_player.turn_on
 target:
-  entity_id: media_player.o_meu_elfin_flip
+  entity_id: media_player.your_projector
 ```
 
-Existing installations retain the media player entity ID. Check any dashboards or automations that used the integration's older entities when upgrading to version 0.4.0.
+## S3 Box wake setup
+
+On an ESPHome **2026.10.2** or later S3 Box with the node name `s3-box`, copy [`esphome/xgimi-wake.yaml`](esphome/xgimi-wake.yaml) into `common/` beside your ESPHome configuration and include it under the existing `packages` key.
+
+```yaml
+packages:
+  xgimi_wake: !include common/xgimi-wake.yaml
+```
+
+Set `xgimi_wake_suffix` in your local ESPHome `secrets.yaml` to the last 15 bytes of your captured manufacturer payload, written as a quoted, comma-separated list of `0xNN` values. The package supplies the company ID and maintains the rolling first byte of the payload. Set `xgimi_projector_udn` to the full `UDN` from the projector's `http://HOST:56790/dd.xml`, including the `uuid:` prefix. The S3 checks that identifier before sending the wake packet.
+
+Upload the firmware and let the ESPHome integration reconnect to the S3 Box. Home Assistant will register `esphome.s3_box_xgimi_wake` for the integration to use. The package adds no S3 Box entity. Standby and state polling remain available when the S3 Box is disconnected.
 
 ## Verify and package
 

@@ -1,4 +1,4 @@
-"""Local Wi-Fi standby and power state for the XGIMI Elfin Flip WK03C."""
+"""Local power control for the XGIMI Elfin Flip WK03C."""
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL

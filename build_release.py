@@ -20,7 +20,7 @@ def main():
         for p in component.rglob("*")
         if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
     ]
-    files += [ROOT / name for name in ("README.md", "LICENSE", "hacs.json")]
+    files += [ROOT / name for name in ("README.md", "LICENSE", "hacs.json", "esphome/xgimi-wake.yaml")]
     output = ROOT / "dist" / f"xgimi-elfin-flip-{manifest['version']}.zip"
     output.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:

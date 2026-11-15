@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Ligar ao Elfin Flip",
-        "description": "Ligue o Elfin Flip WK03C e introduza o endereço na rede local. O Home Assistant verifica o estado e pode pôr o projetor em modo de espera.",
+        "description": "Ligue o Elfin Flip WK03C e introduza o endereço na rede local. O Home Assistant verifica o estado e pode pôr o projetor em modo de espera. Uma S3 Box com o pacote ESPHome permite ligar o projetor.",
         "data": {
           "host": "Endereço IP ou nome do anfitrião"
         },

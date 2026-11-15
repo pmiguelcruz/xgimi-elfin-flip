@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Connect your Elfin Flip",
-        "description": "Turn on your Elfin Flip WK03C and enter its local address. Home Assistant checks its power state and can put it in standby.",
+        "description": "Turn on your Elfin Flip WK03C and enter its local address. Home Assistant checks its power state and can put it in standby. An ESPHome S3 Box with the wake package adds the ability to turn it on.",
         "data": {
           "host": "IP address or hostname"
         },
